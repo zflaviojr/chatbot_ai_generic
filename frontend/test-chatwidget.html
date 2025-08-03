@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste ChatWidget Original</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .test-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h1>🤖 Teste ChatWidget Original</h1>
+        <p>Este teste verifica se o ChatWidget (janelinha lateral) está recebendo as respostas do backend corretamente.</p>
+        
+        <div id="connection-status" class="status disconnected">
+            Status: Inicializando...
+        </div>
+        
+        <div>
+            <button onclick="openWidget()">Abrir Widget</button>
+            <button onclick="sendTestMessage()">Enviar Teste</button>
+            <button onclick="showStats()">Mostrar Stats</button>
+        </div>
+        
+        <div>
+            <h3>Instruções:</h3>
+            <ol>
+                <li>Clique no ícone de chat na lateral direita</li>
+                <li>Digite uma mensagem</li>
+                <li>Verifique se a resposta aparece na mesma janelinha</li>
+                <li>Observe o indicador de digitação</li>
+            </ol>
+        </div>
+        
+        <div>
+            <h3>Logs do Console:</h3>
+            <p>Abra o DevTools (F12) para ver os logs detalhados do fluxo de mensagens.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ChatbotApp } from './src/components/ChatbotApp.js';
+        
+        let chatbotApp = null;
+        const statusDiv = document.getElementById('connection-status');
+        
+        function updateStatus(status, message) {
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = `Status: ${message}`;
+        }
+        
+        // Inicializa o chatbot
+        async function initChatbot() {
+            try {
+                console.log('🚀 Inicializando ChatbotApp para teste do ChatWidget...');
+                updateStatus('connecting', 'Conectando...');
+                
+                chatbotApp = new ChatbotApp({
+                    websocketUrl: 'ws://localhost:3001/ws',
+                    title: 'Teste ChatWidget',
+                    position: 'bottom-right',
+                    autoStart: true,
+                    enableLogging: true
+                });
+                
+                // Aguarda inicialização
+                let attempts = 0;
+                const checkInit = () => {
+                    attempts++;
+                    if (chatbotApp.isInitialized) {
+                        console.log('✅ ChatbotApp inicializado!');
+                        updateStatus('connected', 'Conectado - Widget pronto!');
+                        
+                        // Verifica se o widget existe
+                        if (chatbotApp.chatWidget) {
+                            console.log('✅ ChatWidget encontrado:', chatbotApp.chatWidget);
+                        } else {
+                            console.error('❌ ChatWidget não encontrado!');
+                        }
+                        
+                    } else if (attempts < 50) {
+                        setTimeout(checkInit, 100);
+                    } else {
+                        updateStatus('disconnected', 'Timeout na inicialização');
+                    }
+                };
+                checkInit();
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar:', error);
+                updateStatus('disconnected', `Erro: ${error.message}`);
+            }
+        }
+        
+        window.openWidget = function() {
+            if (chatbotApp && chatbotApp.chatWidget) {
+                console.log('📱 Abrindo ChatWidget...');
+                chatbotApp.chatWidget.open();
+            } else {
+                alert('ChatWidget não inicializado');
+            }
+        };
+        
+        window.sendTestMessage = function() {
+            if (chatbotApp && chatbotApp.chatWidget) {
+                console.log('📤 Simulando envio de mensagem...');
+                
+                // Simula o envio de uma mensagem
+                const testMessage = 'Mensagem de teste para verificar se a resposta aparece no widget!';
+                
+                // Adiciona mensagem do usuário ao widget
+                chatbotApp.chatWidget.addMessage({
+                    type: 'user',
+                    content: testMessage,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Envia via WebSocket
+                chatbotApp.handleUserMessage({
+                    content: testMessage,
+                    messageId: `test_${Date.now()}`,
+                    timestamp: new Date().toISOString()
+                });
+                
+            } else {
+                alert('ChatWidget não inicializado');
+            }
+        };
+        
+        window.showStats = function() {
+            if (chatbotApp) {
+                const stats = chatbotApp.getStats();
+                console.log('📊 Estatísticas:', stats);
+                alert(`Estatísticas:\n${JSON.stringify(stats, null, 2)}`);
+            } else {
+                alert('ChatbotApp não inicializado');
+            }
+        };
+        
+        // Auto-inicializa
+        setTimeout(initChatbot, 1000);
+        
+        // Expõe globalmente para debug
+        window.chatbotApp = chatbotApp;
+    </script>
+</body>
+</html>

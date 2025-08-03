@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Widget Apenas</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>🧪 Teste do Widget Isolado</h1>
+        <p>Este teste inicializa apenas o ChatWidget sem o ChatbotApp para verificar se o problema está na integração.</p>
+        <p>O widget deve aparecer no canto inferior direito.</p>
+    </div>
+    
+    <!-- Container para o widget -->
+    <div id="widget-container"></div>
+    
+    <script type="module">
+        import { ChatWidget } from './src/components/ChatWidget.js';
+        
+        console.log('Iniciando teste do widget isolado...');
+        
+        try {
+            // Configuração simples
+            const config = {
+                title: 'Teste Widget',
+                position: 'bottom-right',
+                theme: 'light',
+                websocketUrl: 'ws://localhost:3001/ws',
+                showWelcomeMessage: true,
+                welcomeMessage: 'Olá! Este é um teste do widget.'
+            };
+            
+            console.log('Criando ChatWidget...');
+            const widget = new ChatWidget('widget-container', config);
+            
+            console.log('Widget criado com sucesso!');
+            
+            // Torna disponível globalmente para debug
+            window.testWidget = widget;
+            
+            // Abre o widget automaticamente após 2 segundos para teste
+            setTimeout(() => {
+                console.log('Abrindo widget para teste...');
+                widget.open();
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Erro ao criar widget:', error);
+            alert(`Erro: ${error.message}`);
+        }
+    </script>
+</body>
+</html>

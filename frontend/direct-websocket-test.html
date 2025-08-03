@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Direto WebSocket</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #log { background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; margin-top: 20px; }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; font-weight: bold; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        input { padding: 8px; margin: 5px; width: 300px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Teste Direto WebSocket</h1>
+        <p>Teste mais simples possível para verificar comunicação WebSocket.</p>
+        
+        <div id="status" class="status disconnected">Status: Desconectado</div>
+        
+        <div>
+            <button onclick="connect()">Conectar</button>
+            <button onclick="disconnect()" disabled id="disconnect-btn">Desconectar</button>
+            <button onclick="sendPing()" disabled id="ping-btn">Ping</button>
+            <button onclick="startSession()" disabled id="session-btn">Iniciar Sessão</button>
+        </div>
+        
+        <div>
+            <input type="text" id="message-input" placeholder="Digite sua mensagem" value="Olá, teste direto!">
+            <button onclick="sendChatMessage()" disabled id="send-btn">Enviar Chat</button>
+        </div>
+        
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let sessionId = null;
+        let messageId = 0;
+        
+        const log = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+        
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(connected) {
+            if (connected) {
+                statusDiv.textContent = 'Status: Conectado ✅';
+                statusDiv.className = 'status connected';
+            } else {
+                statusDiv.textContent = 'Status: Desconectado ❌';
+                statusDiv.className = 'status disconnected';
+            }
+            
+            // Atualiza botões
+            document.getElementById('disconnect-btn').disabled = !connected;
+            document.getElementById('ping-btn').disabled = !connected;
+            document.getElementById('session-btn').disabled = !connected;
+            document.getElementById('send-btn').disabled = !connected;
+        }
+        
+        function connect() {
+            addLog('🔗 Conectando ao WebSocket...');
+            
+            ws = new WebSocket('ws://localhost:3001/ws');
+            
+            ws.onopen = function() {
+                addLog('✅ WebSocket conectado!');
+                updateStatus(true);
+            };
+            
+            ws.onmessage = function(event) {
+                addLog(`📥 Recebido: ${event.data}`);
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'session_started') {
+                        sessionId = data.sessionId;
+                        addLog(`🎯 Sessão iniciada: ${sessionId}`);
+                    }
+                } catch (e) {
+                    addLog(`⚠️ Erro ao parsear JSON: ${e.message}`);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                addLog(`🔌 WebSocket fechado: ${event.code} - ${event.reason}`);
+                updateStatus(false);
+                sessionId = null;
+            };
+            
+            ws.onerror = function(error) {
+                addLog(`❌ Erro WebSocket: ${error}`);
+                updateStatus(false);
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+        
+        function sendMessage(type, data = {}) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addLog('❌ WebSocket não conectado');
+                return;
+            }
+            
+            const message = {
+                type: type,
+                messageId: `msg_${Date.now()}_${++messageId}`,
+                timestamp: new Date().toISOString(),
+                ...data
+            };
+            
+            const messageStr = JSON.stringify(message);
+            addLog(`📤 Enviando: ${messageStr}`);
+            ws.send(messageStr);
+        }
+        
+        function sendPing() {
+            sendMessage('ping');
+        }
+        
+        function startSession() {
+            sendMessage('session_start');
+        }
+        
+        function sendChatMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            
+            if (!content) {
+                addLog('❌ Digite uma mensagem');
+                return;
+            }
+            
+            sendMessage('chat', {
+                content: content,
+                sessionId: sessionId
+            });
+        }
+        
+        // Auto-conecta
+        setTimeout(connect, 1000);
+        
+        // Enter para enviar
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+    </script>
+</body>
+</html>

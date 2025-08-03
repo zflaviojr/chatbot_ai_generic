@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Simples - Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        .status-connecting { background: #ffc107; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Teste Simples do Chatbot</h1>
+        <p>Esta é uma versão simplificada para testar o chatbot sem utilitários extras.</p>
+        
+        <div id="connection-status">
+            <span class="status-indicator status-offline"></span>
+            <span>Status: Carregando...</span>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="toggleChat()">Abrir/Fechar Chat</button>
+            <button onclick="testMessage()">Enviar Teste</button>
+            <button onclick="showDebug()">Debug Info</button>
+        </div>
+        
+        <div id="debug-info" style="background: #f8f9fa; padding: 15px; border-radius: 4px; margin-top: 20px; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
+    </div>
+    
+    <script type="module" src="src/index-simple.js"></script>
+    
+    <script>
+        function toggleChat() {
+            if (window.chatbotApp && window.chatbotApp.chatWidget) {
+                window.chatbotApp.chatWidget.toggle();
+            } else {
+                alert('Chatbot não inicializado ainda');
+            }
+        }
+        
+        function testMessage() {
+            if (window.chatbotApp) {
+                // Simula envio de mensagem
+                console.log('Enviando mensagem de teste...');
+                if (window.chatbotApp.chatWidget) {
+                    window.chatbotApp.chatWidget.open();
+                }
+            } else {
+                alert('Chatbot não inicializado ainda');
+            }
+        }
+        
+        function showDebug() {
+            const debugDiv = document.getElementById('debug-info');
+            const info = {
+                chatbotApp: !!window.chatbotApp,
+                isInitialized: window.chatbotApp ? window.chatbotApp.isInitialized : false,
+                messageHandler: window.chatbotApp ? !!window.chatbotApp.messageHandler : false,
+                chatWidget: window.chatbotApp ? !!window.chatbotApp.chatWidget : false,
+                timestamp: new Date().toISOString()
+            };
+            
+            debugDiv.textContent = JSON.stringify(info, null, 2);
+        }
+        
+        // Atualiza status periodicamente
+        setInterval(() => {
+            const statusElement = document.getElementById('connection-status');
+            const indicator = statusElement.querySelector('.status-indicator');
+            const text = statusElement.querySelector('span:last-child');
+            
+            if (window.chatbotApp && window.chatbotApp.messageHandler) {
+                const isConnected = window.chatbotApp.messageHandler.isConnected;
+                const isConnecting = window.chatbotApp.messageHandler.isConnecting;
+                
+                if (isConnected) {
+                    indicator.className = 'status-indicator status-online';
+                    text.textContent = 'Status: Conectado ✅';
+                } else if (isConnecting) {
+                    indicator.className = 'status-indicator status-connecting';
+                    text.textContent = 'Status: Conectando...';
+                } else {
+                    indicator.className = 'status-indicator status-offline';
+                    text.textContent = 'Status: Desconectado';
+                }
+            } else {
+                indicator.className = 'status-indicator status-offline';
+                text.textContent = 'Status: Inicializando...';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

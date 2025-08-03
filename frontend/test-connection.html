@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Conexão WebSocket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        .status.connecting { background: #fff3cd; color: #856404; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        #messages {
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .message.sent { background: #e3f2fd; }
+        .message.received { background: #f1f8e9; }
+        .message.error { background: #ffebee; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Teste de Conexão WebSocket</h1>
+    
+    <div id="status" class="status disconnected">
+        Status: Desconectado
+    </div>
+    
+    <div>
+        <button id="connect" class="btn-primary">Conectar</button>
+        <button id="disconnect" class="btn-warning">Desconectar</button>
+        <button id="ping" class="btn-success">Ping</button>
+        <button id="clear" class="btn-warning">Limpar</button>
+    </div>
+    
+    <div>
+        <input type="text" id="messageInput" placeholder="Digite uma mensagem..." style="width: 70%; padding: 8px;">
+        <button id="send" class="btn-primary">Enviar</button>
+    </div>
+    
+    <div id="messages"></div>
+    
+    <div>
+        <h3>Informações de Debug:</h3>
+        <ul>
+            <li>URL WebSocket: <code>ws://localhost:3001/ws</code></li>
+            <li>Estado atual: <span id="wsState">Não conectado</span></li>
+            <li>Tentativas de reconexão: <span id="reconnectAttempts">0</span></li>
+            <li>Última mensagem: <span id="lastMessage">Nenhuma</span></li>
+        </ul>
+    </div>
+
+    <script>
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        const wsStateEl = document.getElementById('wsState');
+        const reconnectAttemptsEl = document.getElementById('reconnectAttempts');
+        const lastMessageEl = document.getElementById('lastMessage');
+        const messageInput = document.getElementById('messageInput');
+        
+        function updateStatus(status, message) {
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = `Status: ${message}`;
+            wsStateEl.textContent = message;
+        }
+        
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${content}`;
+            messagesEl.appendChild(messageDiv);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            lastMessageEl.textContent = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+        }
+        
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addMessage('error', 'Já conectado!');
+                return;
+            }
+            
+            updateStatus('connecting', 'Conectando...');
+            addMessage('sent', 'Tentando conectar em ws://localhost:3001/ws');
+            
+            try {
+                ws = new WebSocket('ws://localhost:3001/ws');
+                
+                ws.onopen = function(event) {
+                    updateStatus('connected', 'Conectado');
+                    addMessage('received', 'Conexão WebSocket estabelecida!');
+                    reconnectAttempts = 0;
+                    reconnectAttemptsEl.textContent = '0';
+                };
+                
+                ws.onmessage = function(event) {
+                    addMessage('received', `Mensagem recebida: ${event.data}`);
+                    try {
+                        const data = JSON.parse(event.data);
+                        addMessage('received', `Tipo: ${data.type}, Conteúdo: ${JSON.stringify(data, null, 2)}`);
+                    } catch (e) {
+                        addMessage('received', `Dados brutos: ${event.data}`);
+                    }
+                };
+                
+                ws.onclose = function(event) {
+                    updateStatus('disconnected', 'Desconectado');
+                    addMessage('error', `Conexão fechada: Código ${event.code}, Razão: ${event.reason || 'Não especificada'}`);
+                    
+                    if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        reconnectAttemptsEl.textContent = reconnectAttempts;
+                        addMessage('sent', `Tentativa de reconexão ${reconnectAttempts}/${maxReconnectAttempts} em 3 segundos...`);
+                        setTimeout(connect, 3000);
+                    }
+                };
+                
+                ws.onerror = function(event) {
+                    addMessage('error', `Erro na conexão: ${event.type}`);
+                    updateStatus('disconnected', 'Erro na conexão');
+                };
+                
+            } catch (error) {
+                addMessage('error', `Erro ao criar WebSocket: ${error.message}`);
+                updateStatus('disconnected', 'Erro na criação');
+            }
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close(1000, 'Desconexão manual');
+                ws = null;
+            }
+            updateStatus('disconnected', 'Desconectado manualmente');
+            addMessage('sent', 'Desconectado manualmente');
+        }
+        
+        function ping() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const pingMessage = {
+                    type: 'ping',
+                    timestamp: new Date().toISOString()
+                };
+                ws.send(JSON.stringify(pingMessage));
+                addMessage('sent', `Ping enviado: ${JSON.stringify(pingMessage)}`);
+            } else {
+                addMessage('error', 'WebSocket não está conectado');
+            }
+        }
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const chatMessage = {
+                    type: 'chat',
+                    content: message,
+                    messageId: `msg_${Date.now()}`,
+                    timestamp: new Date().toISOString()
+                };
+                ws.send(JSON.stringify(chatMessage));
+                addMessage('sent', `Mensagem enviada: ${message}`);
+                messageInput.value = '';
+            } else {
+                addMessage('error', 'WebSocket não está conectado');
+            }
+        }
+        
+        function clearMessages() {
+            messagesEl.innerHTML = '';
+            lastMessageEl.textContent = 'Nenhuma';
+        }
+        
+        // Event listeners
+        document.getElementById('connect').addEventListener('click', connect);
+        document.getElementById('disconnect').addEventListener('click', disconnect);
+        document.getElementById('ping').addEventListener('click', ping);
+        document.getElementById('send').addEventListener('click', sendMessage);
+        document.getElementById('clear').addEventListener('click', clearMessages);
+        
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Auto-conecta ao carregar
+        addMessage('sent', 'Página carregada. Clique em "Conectar" para testar a conexão.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Botões Reposicionados</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .preview-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .preview-header {
+            background: #007bff;
+            color: white;
+            padding: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .preview-content {
+            padding: 0;
+        }
+        
+        .info {
+            padding: 20px;
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        
+        .changes-list {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        
+        .changes-list h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .changes-list ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .changes-list li {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>✅ Botões Reposicionados e Sem Fundo Cinza</h1>
+    
+    <div class="changes-list">
+        <h3>🔧 Alterações Aplicadas:</h3>
+        <ul>
+            <li>✅ Botões movidos para DEPOIS da área de input</li>
+            <li>✅ Removido fundo cinza (background transparente)</li>
+            <li>✅ Removido CSS duplicado</li>
+            <li>✅ Mantidas cores: vermelho para "Finalizar", azul para "Novo"</li>
+            <li>✅ Hover sutil mantido</li>
+        </ul>
+    </div>
+    
+    <div class="preview-container">
+        <div class="preview-header">
+            Assistente Virtual
+        </div>
+        <div class="preview-content">
+            <!-- Simula algumas mensagens -->
+            <div style="padding: 16px; border-bottom: 1px solid #dee2e6;">
+                <div style="background: #007bff; color: white; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; max-width: 80%; margin-left: auto;">
+                    Olá! Como posso ajudá-la hoje?
+                </div>
+                <div style="background: #f8f9fa; color: #343a40; padding: 8px 12px; border-radius: 8px; max-width: 80%;">
+                    Oi, preciso de ajuda
+                </div>
+            </div>
+            
+            <!-- Área de input - AGORA VEM PRIMEIRO -->
+            <div style="border-top: 1px solid #dee2e6; padding: 16px;">
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <div style="flex: 1; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 12px; background: white;">
+                        Digite sua mensagem...
+                    </div>
+                    <button style="width: 40px; height: 40px; background: #007bff; color: white; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #6c757d; margin-top: 4px;">
+                    0/4000
+                </div>
+            </div>
+            
+            <!-- Botões de sessão - AGORA VEM DEPOIS, SEM FUNDO CINZA -->
+            <div class="chat-widget__session-controls">
+                <button class="chat-widget__session-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16 17v2H2v-2s0-4 7-4 7 4 7 4m-3.5-9.5A3.5 3.5 0 1 0 9 11a3.5 3.5 0 0 0 3.5-3.5z"/>
+                    </svg>
+                    Finalizar
+                </button>
+                <button class="chat-widget__session-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Novo
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info">
+        <strong>🎯 Resultado Final:</strong>
+        <ul>
+            <li><strong>Posição:</strong> Botões agora estão na parte inferior, depois do input</li>
+            <li><strong>Visual:</strong> Sem fundo cinza, completamente transparente</li>
+            <li><strong>Cores:</strong> Vermelho para "Finalizar", azul para "Novo"</li>
+            <li><strong>Hover:</strong> Efeito sutil mantido para feedback visual</li>
+            <li><strong>Layout:</strong> Mais limpo e intuitivo</li>
+        </ul>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 8px;">
+        <strong>📱 Para testar:</strong><br>
+        Abra <code>frontend/index.html</code> para ver o resultado no chatbot funcionando!
+    </div>
+    
+    <script>
+        // Adiciona interatividade para demonstração
+        document.querySelectorAll('.chat-widget__session-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.textContent.trim();
+                alert(`Botão "${action}" clicado!\\n\\n✅ Agora na posição correta (depois do input)\\n✅ Sem fundo cinza!`);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Controle de Sessão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .debug-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .debug-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .debug-btn:hover {
+            background: #0056b3;
+        }
+        
+        #debug-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        
+        .message-log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        .sent { border-left: 4px solid #007bff; }
+        .received { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 Debug do Controle de Sessão</h1>
+        <p>Esta página monitora em tempo real as mensagens WebSocket para diagnosticar problemas de sessão.</p>
+        
+        <div>
+            <button class="debug-btn" onclick="testConnection()">Testar Conexão</button>
+            <button class="debug-btn" onclick="startSession()">Iniciar Sessão</button>
+            <button class="debug-btn" onclick="sendTestMessage()">Enviar Mensagem Teste</button>
+            <button class="debug-btn" onclick="sendSecondMessage()">Enviar Segunda Mensagem</button>
+            <button class="debug-btn" onclick="clearDebug()">Limpar Debug</button>
+        </div>
+        
+        <h3>Console de Debug:</h3>
+        <div id="debug-output"></div>
+        
+        <h3>Log de Mensagens WebSocket:</h3>
+        <div id="message-log"></div>
+    </div>
+    
+    <script>
+        let ws = null;
+        let currentSessionId = null;
+        let messageCount = 0;
+        
+        const debugOutput = document.getElementById('debug-output');
+        const messageLog = document.getElementById('message-log');
+        
+        function addDebugLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugOutput.textContent += `[${timestamp}] ${message}\n`;
+            debugOutput.scrollTop = debugOutput.scrollHeight;
+        }
+        
+        function addMessageLog(direction, data) {
+            const div = document.createElement('div');
+            div.className = `message-log ${direction}`;
+            div.innerHTML = `
+                <strong>${direction.toUpperCase()}</strong> - ${new Date().toLocaleTimeString()}<br>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            messageLog.appendChild(div);
+            messageLog.scrollTop = messageLog.scrollHeight;
+        }
+        
+        function testConnection() {
+            addDebugLog('=== TESTE DE CONEXÃO ===');
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addDebugLog('WebSocket já está conectado');
+                return;
+            }
+            
+            addDebugLog('Conectando ao WebSocket...');
+            ws = new WebSocket('ws://localhost:3001/ws');
+            
+            ws.onopen = function(event) {
+                addDebugLog('✅ Conexão WebSocket estabelecida');
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    addDebugLog(`📨 Mensagem recebida: ${data.type}`);
+                    addMessageLog('received', data);
+                    
+                    // Processa tipos específicos
+                    if (data.type === 'session_started') {
+                        currentSessionId = data.sessionId;
+                        addDebugLog(`🆔 Session ID definido: ${currentSessionId}`);
+                    }
+                    
+                    if (data.type === 'chat_response') {
+                        addDebugLog(`💬 Resposta do chat recebida (sessão: ${data.sessionId})`);
+                        if (data.context) {
+                            addDebugLog(`📋 Contexto: ${JSON.stringify(data.context)}`);
+                        }
+                    }
+                    
+                } catch (error) {
+                    addDebugLog(`❌ Erro ao processar mensagem: ${error.message}`);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                addDebugLog(`🔌 Conexão fechada: ${event.code} - ${event.reason}`);
+            };
+            
+            ws.onerror = function(event) {
+                addDebugLog(`❌ Erro na conexão: ${event.type}`);
+            };
+        }
+        
+        function startSession() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addDebugLog('❌ WebSocket não está conectado');
+                return;
+            }
+            
+            addDebugLog('=== INICIANDO SESSÃO ===');
+            const message = {
+                type: 'session_start',
+                timestamp: new Date().toISOString()
+            };
+            
+            addDebugLog('📤 Enviando comando session_start');
+            addMessageLog('sent', message);
+            ws.send(JSON.stringify(message));
+        }
+        
+        function sendTestMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addDebugLog('❌ WebSocket não está conectado');
+                return;
+            }
+            
+            messageCount++;
+            const testMessage = messageCount === 1 ? 'Oi, me chamo Maria' : `Esta é minha ${messageCount}ª mensagem`;
+            
+            addDebugLog(`=== ENVIANDO MENSAGEM ${messageCount} ===`);
+            addDebugLog(`Session ID atual: ${currentSessionId || 'NENHUM'}`);
+            
+            const message = {
+                type: 'chat',
+                content: testMessage,
+                messageId: `test_msg_${Date.now()}`,
+                sessionId: currentSessionId,
+                timestamp: new Date().toISOString()
+            };
+            
+            addDebugLog(`📤 Enviando mensagem: "${testMessage}"`);
+            addMessageLog('sent', message);
+            ws.send(JSON.stringify(message));
+        }
+        
+        function sendSecondMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addDebugLog('❌ WebSocket não está conectado');
+                return;
+            }
+            
+            addDebugLog('=== ENVIANDO SEGUNDA MENSAGEM (TESTE DE CONTEXTO) ===');
+            addDebugLog(`Session ID atual: ${currentSessionId || 'NENHUM'}`);
+            
+            const message = {
+                type: 'chat',
+                content: 'Você lembra do meu nome?',
+                messageId: `test_msg_${Date.now()}`,
+                sessionId: currentSessionId,
+                timestamp: new Date().toISOString()
+            };
+            
+            addDebugLog('📤 Enviando pergunta sobre contexto');
+            addMessageLog('sent', message);
+            ws.send(JSON.stringify(message));
+        }
+        
+        function clearDebug() {
+            debugOutput.textContent = '';
+            messageLog.innerHTML = '';
+            addDebugLog('Debug limpo');
+        }
+        
+        // Auto-conecta ao carregar
+        window.addEventListener('load', () => {
+            addDebugLog('Página carregada. Clique em "Testar Conexão" para começar.');
+        });
+    </script>
+</body>
+</html>

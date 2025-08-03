@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Formatação do Histórico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-header {
+            background: #dc3545;
+            color: white;
+            padding: 16px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .test-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .expected-format {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            🔍 Teste de Formatação do Histórico - Correção de Bugs
+        </div>
+        
+        <div class="status error">
+            <strong>🐛 Problema Identificado:</strong><br>
+            - Role "assistant" não está sendo enviada (deveria ser "assistant", não "assistent")<br>
+            - Mensagem do usuário sendo duplicada ao invés do histórico completo<br>
+            - Falta de alternância entre roles "user" e "assistant"
+        </div>
+        
+        <div class="expected-format">
+            <strong>📋 Formato Esperado:</strong><br>
+            [<br>
+            &nbsp;&nbsp;{"role": "system", "content": "Você é um atendente..."},<br>
+            &nbsp;&nbsp;{"role": "user", "content": "Primeira mensagem do usuário"},<br>
+            &nbsp;&nbsp;{"role": "assistant", "content": "Resposta do assistente"},<br>
+            &nbsp;&nbsp;{"role": "user", "content": "Segunda mensagem do usuário"}<br>
+            ]
+        </div>
+        
+        <button class="test-button" onclick="testHistoryFormat()">🧪 Testar Formatação do Histórico</button>
+        <button class="test-button" onclick="simulateConversation()">💬 Simular Conversa Completa</button>
+        <button class="test-button" onclick="clearOutput()">🗑️ Limpar Output</button>
+        
+        <div id="output" class="test-output"></div>
+    </div>
+
+    <script type="module">
+        import { ConversationHistoryManager } from './src/utils/ConversationHistoryManager.js';
+        
+        // Instância global para testes
+        window.historyManager = new ConversationHistoryManager({
+            debug: true,
+            maxTokens: 4000
+        });
+        
+        window.testHistoryFormat = function() {
+            const output = document.getElementById('output');
+            output.textContent = '';
+            
+            try {
+                log('🧪 Testando formatação do histórico...\n');
+                
+                // Limpa histórico anterior
+                window.historyManager.startNewSession({
+                    customerName: 'João',
+                    stage: 'greeting'
+                });
+                
+                log('✅ Nova sessão iniciada\n');
+                
+                // Simula uma conversa
+                log('📝 Adicionando mensagens ao histórico...\n');
+                
+                const msg1 = window.historyManager.addUserMessage('Olá, como você está?');
+                log(`➡️ Usuário: "${msg1.content}" (role: ${msg1.role})\n`);
+                
+                const msg2 = window.historyManager.addAssistantMessage('Olá! Estou bem, obrigado. Como posso ajudá-lo hoje?');
+                log(`⬅️ Assistente: "${msg2.content}" (role: ${msg2.role})\n`);
+                
+                const msg3 = window.historyManager.addUserMessage('Preciso de informações sobre tratamentos faciais');
+                log(`➡️ Usuário: "${msg3.content}" (role: ${msg3.role})\n`);
+                
+                const msg4 = window.historyManager.addAssistantMessage('Claro! Oferecemos diversos tratamentos faciais. Você tem algum interesse específico?');
+                log(`⬅️ Assistente: "${msg4.content}" (role: ${msg4.role})\n`);
+                
+                const msg5 = window.historyManager.addUserMessage('Como eu disse que me chamo mesmo?');
+                log(`➡️ Usuário: "${msg5.content}" (role: ${msg5.role})\n`);
+                
+                // Prepara payload para API
+                log('🔄 Preparando payload para API...\n');
+                const apiPayload = window.historyManager.prepareApiPayload();
+                
+                log('📋 PAYLOAD FINAL PARA API:\n');
+                log(JSON.stringify(apiPayload, null, 2));
+                log('\n');
+                
+                // Verifica se está correto
+                let isCorrect = true;
+                let errors = [];
+                
+                // Verifica se tem system message
+                if (!apiPayload[0] || apiPayload[0].role !== 'system') {
+                    isCorrect = false;
+                    errors.push('❌ System message não encontrado ou não está primeiro');
+                }
+                
+                // Verifica alternância de roles
+                for (let i = 1; i < apiPayload.length; i++) {
+                    const msg = apiPayload[i];
+                    
+                    // Verifica se role é válida
+                    if (!['user', 'assistant'].includes(msg.role)) {
+                        isCorrect = false;
+                        errors.push(`❌ Role inválida na mensagem ${i}: "${msg.role}" (deveria ser "user" ou "assistant")`);
+                    }
+                    
+                    // Verifica se não há mensagens duplicadas
+                    for (let j = i + 1; j < apiPayload.length; j++) {
+                        if (apiPayload[i].content === apiPayload[j].content && apiPayload[i].role === apiPayload[j].role) {
+                            isCorrect = false;
+                            errors.push(`❌ Mensagem duplicada encontrada: "${msg.content.substring(0, 30)}..."`);
+                        }
+                    }
+                }
+                
+                log('\n📊 RESULTADO DA VALIDAÇÃO:\n');
+                if (isCorrect) {
+                    log('✅ FORMATAÇÃO CORRETA! O histórico está sendo formatado adequadamente.\n');
+                } else {
+                    log('❌ PROBLEMAS ENCONTRADOS:\n');
+                    errors.forEach(error => log(error + '\n'));
+                }
+                
+                // Mostra estatísticas
+                const sessionInfo = window.historyManager.getSessionInfo();
+                log(`\n📈 ESTATÍSTICAS:\n`);
+                log(`- Total de mensagens no histórico: ${sessionInfo.messageCount}\n`);
+                log(`- Total de mensagens no payload: ${apiPayload.length}\n`);
+                log(`- Total de tokens estimados: ${sessionInfo.totalTokens}\n`);
+                log(`- ID da sessão: ${sessionInfo.sessionId}\n`);
+                
+            } catch (error) {
+                log(`❌ ERRO NO TESTE: ${error.message}\n`);
+                log(`Stack trace: ${error.stack}\n`);
+            }
+        };
+        
+        window.simulateConversation = function() {
+            const output = document.getElementById('output');
+            output.textContent = '';
+            
+            try {
+                log('💬 Simulando conversa completa...\n');
+                
+                // Nova sessão
+                window.historyManager.startNewSession({
+                    customerName: 'Maria Silva',
+                    stage: 'greeting'
+                });
+                
+                // Conversa simulada
+                const conversation = [
+                    { role: 'user', content: 'Oi, tudo bem?' },
+                    { role: 'assistant', content: 'Olá Maria! Tudo ótimo, obrigado por perguntar. Como posso ajudá-la hoje?' },
+                    { role: 'user', content: 'Quero saber sobre tratamentos para rugas' },
+                    { role: 'assistant', content: 'Perfeito! Temos várias opções para tratamento de rugas. Você prefere tratamentos mais suaves ou está aberta a procedimentos mais intensivos?' },
+                    { role: 'user', content: 'Prefiro algo mais suave primeiro' },
+                    { role: 'assistant', content: 'Ótima escolha! Para começar, recomendo nosso tratamento com ácido hialurônico e vitamina C. É muito eficaz e suave.' },
+                    { role: 'user', content: 'Como eu disse que me chamo mesmo?' }
+                ];
+                
+                // Adiciona mensagens alternadamente
+                conversation.forEach((msg, index) => {
+                    if (msg.role === 'user') {
+                        window.historyManager.addUserMessage(msg.content);
+                        log(`${index + 1}. 👤 Usuário: "${msg.content}"\n`);
+                    } else {
+                        window.historyManager.addAssistantMessage(msg.content);
+                        log(`${index + 1}. 🤖 Assistente: "${msg.content}"\n`);
+                    }
+                });
+                
+                log('\n🔄 Preparando payload final...\n');
+                const finalPayload = window.historyManager.prepareApiPayload();
+                
+                log('📋 PAYLOAD FINAL:\n');
+                log(JSON.stringify(finalPayload, null, 2));
+                
+                // Análise do payload
+                log('\n🔍 ANÁLISE DO PAYLOAD:\n');
+                finalPayload.forEach((msg, index) => {
+                    const preview = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
+                    log(`${index}. [${msg.role.toUpperCase()}] ${preview}\n`);
+                });
+                
+                log(`\n✅ Conversa simulada com ${finalPayload.length} mensagens no payload\n`);
+                
+            } catch (error) {
+                log(`❌ ERRO NA SIMULAÇÃO: ${error.message}\n`);
+            }
+        };
+        
+        window.clearOutput = function() {
+            document.getElementById('output').textContent = '';
+        };
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            output.textContent += message;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Página de teste de formatação carregada');
+            console.log('📊 ConversationHistoryManager:', window.historyManager);
+        });
+    </script>
+</body>
+</html>

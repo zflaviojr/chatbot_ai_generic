@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .debug-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #388e3c;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        #log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-panel">
+        <h1>🔧 Debug do Chatbot MCP</h1>
+        <p>Esta página ajuda a identificar problemas na inicialização do chatbot.</p>
+        
+        <div id="status">Verificando componentes...</div>
+        
+        <button onclick="testWebSocket()">Testar WebSocket</button>
+        <button onclick="testComponents()">Testar Componentes</button>
+        <button onclick="initChatbot()">Inicializar Chatbot</button>
+        <button onclick="clearLog()">Limpar Log</button>
+        
+        <h3>Log de Debug:</h3>
+        <div id="log"></div>
+    </div>
+
+    <script type="module">
+        let log = document.getElementById('log');
+        let status = document.getElementById('status');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            log.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+        
+        window.addLog = addLog;
+        
+        // Teste inicial
+        addLog('Página de debug carregada');
+        
+        // Teste de WebSocket
+        window.testWebSocket = function() {
+            addLog('Testando conexão WebSocket...');
+            
+            try {
+                const ws = new WebSocket('ws://localhost:3001/ws');
+                
+                ws.onopen = function() {
+                    addLog('✅ WebSocket conectado!', 'success');
+                    ws.close();
+                };
+                
+                ws.onerror = function(error) {
+                    addLog('❌ Erro no WebSocket: ' + error, 'error');
+                };
+                
+                ws.onclose = function(event) {
+                    addLog(`WebSocket fechado: ${event.code} - ${event.reason}`);
+                };
+                
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        addLog('❌ Timeout na conexão WebSocket', 'error');
+                        ws.close();
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                addLog('❌ Erro ao criar WebSocket: ' + error.message, 'error');
+            }
+        };
+        
+        // Teste de componentes
+        window.testComponents = async function() {
+            addLog('Testando importação de componentes...');
+            
+            try {
+                // Teste MessageHandler
+                const { MessageHandler } = await import('./src/components/MessageHandler.js');
+                addLog('✅ MessageHandler importado', 'success');
+                
+                // Teste ChatInterface
+                const { ChatInterface } = await import('./src/components/ChatInterface.js');
+                addLog('✅ ChatInterface importado', 'success');
+                
+                // Teste ChatWidget
+                const { ChatWidget } = await import('./src/components/ChatWidget.js');
+                addLog('✅ ChatWidget importado', 'success');
+                
+                // Teste ChatbotApp
+                const { ChatbotApp } = await import('./src/components/ChatbotApp.js');
+                addLog('✅ ChatbotApp importado', 'success');
+                
+                status.innerHTML = '<div class="success">✅ Todos os componentes foram importados com sucesso!</div>';
+                
+            } catch (error) {
+                addLog('❌ Erro ao importar componentes: ' + error.message, 'error');
+                status.innerHTML = '<div class="error">❌ Erro na importação: ' + error.message + '</div>';
+            }
+        };
+        
+        // Inicializar chatbot
+        window.initChatbot = async function() {
+            addLog('Inicializando chatbot...');
+            
+            try {
+                const { ChatbotApp } = await import('./src/components/ChatbotApp.js');
+                
+                const config = {
+                    websocketUrl: 'ws://localhost:3001/ws',
+                    title: 'Debug Chatbot',
+                    position: 'bottom-right',
+                    autoStart: true
+                };
+                
+                window.debugChatbot = new ChatbotApp(config);
+                addLog('✅ Chatbot inicializado!', 'success');
+                
+                // Aguarda inicialização
+                setTimeout(() => {
+                    if (window.debugChatbot.isInitialized) {
+                        addLog('✅ Chatbot totalmente inicializado!', 'success');
+                        status.innerHTML = '<div class="success">✅ Chatbot funcionando!</div>';
+                    } else {
+                        addLog('⚠️ Chatbot ainda inicializando...');
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                addLog('❌ Erro ao inicializar chatbot: ' + error.message, 'error');
+                addLog('Stack trace: ' + error.stack, 'error');
+                status.innerHTML = '<div class="error">❌ Erro na inicialização: ' + error.message + '</div>';
+            }
+        };
+        
+        window.clearLog = function() {
+            log.textContent = '';
+            addLog('Log limpo');
+        };
+        
+        // Auto-teste inicial
+        setTimeout(() => {
+            testComponents();
+        }, 1000);
+    </script>
+</body>
+</html>

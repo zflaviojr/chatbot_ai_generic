@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Integração Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-header {
+            background: #28a745;
+            color: white;
+            padding: 16px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .test-button.success {
+            background: #28a745;
+        }
+        
+        .test-button.danger {
+            background: #dc3545;
+        }
+        
+        .test-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            🔧 Teste de Integração Backend - Correção do Erro
+        </div>
+        
+        <div class="status info">
+            <strong>🎯 Objetivo:</strong> Testar se o backend agora recebe corretamente o histórico do frontend
+        </div>
+        
+        <div class="status error">
+            <strong>🐛 Problema Original:</strong><br>
+            - Backend recebia "undefined" no campo history<br>
+            - Erro: "Cannot read properties of undefined (reading 'length')"<br>
+            - Histórico não estava sendo enviado corretamente
+        </div>
+        
+        <div class="status success">
+            <strong>✅ Correções Aplicadas:</strong><br>
+            - Frontend agora envia campo "history" com array formatado<br>
+            - Backend verifica se history existe antes de usar<br>
+            - Logs adicionados para debug<br>
+            - Fallback para histórico da sessão se necessário
+        </div>
+        
+        <button class="test-button" onclick="testSingleMessage()">📤 Testar Mensagem Única</button>
+        <button class="test-button" onclick="testConversation()">💬 Testar Conversa Completa</button>
+        <button class="test-button success" onclick="connectWebSocket()">🔌 Conectar WebSocket</button>
+        <button class="test-button danger" onclick="disconnectWebSocket()">🔌 Desconectar</button>
+        <button class="test-button" onclick="clearOutput()">🗑️ Limpar</button>
+        
+        <div id="output" class="test-output"></div>
+    </div>
+
+    <script type="module">
+        import { MessageHandler } from './src/components/MessageHandler.js';
+        
+        let messageHandler = null;
+        
+        window.connectWebSocket = function() {
+            const output = document.getElementById('output');
+            
+            try {
+                log('🔌 Conectando ao WebSocket...');
+                
+                messageHandler = new MessageHandler('ws://localhost:3001/ws', {
+                    enableLogging: true,
+                    historyConfig: {
+                        debug: true,
+                        maxTokens: 4000
+                    }
+                });
+                
+                // Event listeners
+                messageHandler.on('connected', (data) => {
+                    log('✅ Conectado ao WebSocket!');
+                    log(`📊 Dados da conexão: ${JSON.stringify(data, null, 2)}`);
+                });
+                
+                messageHandler.on('disconnected', (data) => {
+                    log('❌ Desconectado do WebSocket');
+                    log(`📊 Dados da desconexão: ${JSON.stringify(data, null, 2)}`);
+                });
+                
+                messageHandler.on('chatResponse', (response) => {
+                    log('📨 Resposta recebida do backend:');
+                    log(`📝 Conteúdo: ${response.content}`);
+                    log(`📊 Dados completos: ${JSON.stringify(response, null, 2)}`);
+                });
+                
+                messageHandler.on('chatError', (error) => {
+                    log('❌ Erro na resposta do chat:');
+                    log(`📝 Erro: ${error.message || error.displayMessage}`);
+                    log(`📊 Dados do erro: ${JSON.stringify(error, null, 2)}`);
+                });
+                
+                log('⏳ Aguardando conexão...');
+                
+            } catch (error) {
+                log(`❌ Erro ao conectar: ${error.message}`);
+            }
+        };
+        
+        window.disconnectWebSocket = function() {
+            if (messageHandler) {
+                messageHandler.disconnect();
+                messageHandler = null;
+                log('🔌 WebSocket desconectado');
+            } else {
+                log('⚠️ WebSocket não estava conectado');
+            }
+        };
+        
+        window.testSingleMessage = function() {
+            if (!messageHandler) {
+                log('❌ WebSocket não conectado. Conecte primeiro.');
+                return;
+            }
+            
+            try {
+                log('📤 Testando mensagem única...');
+                
+                // Inicia nova sessão
+                messageHandler.startSession({
+                    customerName: 'João Teste',
+                    stage: 'greeting'
+                });
+                
+                log('🆕 Nova sessão iniciada');
+                
+                // Envia mensagem
+                const messageId = messageHandler.sendChatMessage('Olá, como você está?');
+                log(`📤 Mensagem enviada com ID: ${messageId}`);
+                
+                // Mostra histórico atual
+                const history = messageHandler.getConversationHistory();
+                log('📚 Histórico atual:');
+                log(JSON.stringify(history, null, 2));
+                
+            } catch (error) {
+                log(`❌ Erro no teste: ${error.message}`);
+            }
+        };
+        
+        window.testConversation = function() {
+            if (!messageHandler) {
+                log('❌ WebSocket não conectado. Conecte primeiro.');
+                return;
+            }
+            
+            try {
+                log('💬 Testando conversa completa...');
+                
+                // Inicia nova sessão
+                messageHandler.startSession({
+                    customerName: 'Maria Silva',
+                    stage: 'greeting'
+                });
+                
+                log('🆕 Nova sessão iniciada para conversa');
+                
+                // Simula conversa
+                const messages = [
+                    'Oi, tudo bem?',
+                    'Quero saber sobre tratamentos faciais',
+                    'Qual o preço do tratamento com ácido hialurônico?',
+                    'Como eu disse que me chamo mesmo?'
+                ];
+                
+                let messageIndex = 0;
+                
+                const sendNextMessage = () => {
+                    if (messageIndex < messages.length) {
+                        const message = messages[messageIndex];
+                        log(`📤 Enviando mensagem ${messageIndex + 1}: "${message}"`);
+                        
+                        messageHandler.sendChatMessage(message);
+                        messageIndex++;
+                        
+                        // Envia próxima mensagem após 3 segundos
+                        setTimeout(sendNextMessage, 3000);
+                    } else {
+                        log('✅ Conversa completa finalizada');
+                        
+                        // Mostra histórico final
+                        const finalHistory = messageHandler.getConversationHistory();
+                        log('📚 Histórico final da conversa:');
+                        log(JSON.stringify(finalHistory, null, 2));
+                    }
+                };
+                
+                sendNextMessage();
+                
+            } catch (error) {
+                log(`❌ Erro na conversa: ${error.message}`);
+            }
+        };
+        
+        window.clearOutput = function() {
+            document.getElementById('output').textContent = '';
+        };
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        // Auto-conecta ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🧪 Página de teste carregada');
+            log('📋 Instruções:');
+            log('1. Clique em "Conectar WebSocket"');
+            log('2. Aguarde a conexão');
+            log('3. Teste mensagem única ou conversa completa');
+            log('4. Verifique os logs do backend no terminal');
+            log('');
+        });
+    </script>
+</body>
+</html>

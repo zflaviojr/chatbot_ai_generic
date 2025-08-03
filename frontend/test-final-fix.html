@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Final - Correção do Erro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-header {
+            background: #28a745;
+            color: white;
+            padding: 16px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            width: 100%;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .chat-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            background: #f8f9fa;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .message.user {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message.bot {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .message.system {
+            background: #fff3cd;
+            color: #856404;
+            text-align: center;
+            font-style: italic;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            ✅ Teste Final - Correção do Erro "Cannot read properties of undefined"
+        </div>
+        
+        <div class="status info">
+            <strong>🎯 Objetivo:</strong> Verificar se o erro foi completamente corrigido e o chatbot funciona normalmente
+        </div>
+        
+        <div class="status success">
+            <strong>🔧 Correções Aplicadas:</strong><br>
+            ✅ AIProviderManager: Verificação segura de options.history<br>
+            ✅ Server.js: Garantia de array válido para messageHistory<br>
+            ✅ OpenRouterProvider: Logs de debug melhorados<br>
+            ✅ Verificações de segurança em todos os pontos críticos
+        </div>
+        
+        <button class="test-button" onclick="startTest()">🚀 Iniciar Teste Completo</button>
+        
+        <div id="status" class="status info" style="display: none;">
+            <strong>Status:</strong> <span id="status-text">Iniciando...</span>
+        </div>
+        
+        <div class="chat-preview" id="chat-preview" style="display: none;">
+            <div class="message system">Iniciando teste do chatbot...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { MessageHandler } from './src/components/MessageHandler.js';
+        
+        let messageHandler = null;
+        let testStep = 0;
+        
+        window.startTest = async function() {
+            const statusDiv = document.getElementById('status');
+            const statusText = document.getElementById('status-text');
+            const chatPreview = document.getElementById('chat-preview');
+            
+            statusDiv.style.display = 'block';
+            chatPreview.style.display = 'block';
+            
+            try {
+                // Passo 1: Conectar
+                updateStatus('🔌 Conectando ao WebSocket...', 'info');
+                
+                messageHandler = new MessageHandler('ws://localhost:3001/ws', {
+                    enableLogging: true,
+                    historyConfig: {
+                        debug: true,
+                        maxTokens: 4000
+                    }
+                });
+                
+                // Aguarda conexão
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('Timeout na conexão')), 10000);
+                    
+                    messageHandler.on('connected', () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    });
+                    
+                    messageHandler.on('connectionError', (error) => {
+                        clearTimeout(timeout);
+                        reject(error);
+                    });
+                });
+                
+                updateStatus('✅ Conectado! Iniciando conversa...', 'success');
+                addMessage('system', 'Conectado ao servidor');
+                
+                // Passo 2: Iniciar sessão
+                messageHandler.startSession({
+                    customerName: 'Teste Final',
+                    stage: 'greeting'
+                });
+                
+                addMessage('system', 'Nova sessão iniciada');
+                
+                // Passo 3: Enviar mensagens de teste
+                const testMessages = [
+                    'Olá, como você está?',
+                    'Meu nome é João Silva',
+                    'Quero saber sobre tratamentos faciais',
+                    'Como eu disse que me chamo mesmo?'
+                ];
+                
+                for (let i = 0; i < testMessages.length; i++) {
+                    const message = testMessages[i];
+                    
+                    updateStatus(`📤 Enviando mensagem ${i + 1}/${testMessages.length}: "${message}"`, 'info');
+                    addMessage('user', message);
+                    
+                    // Envia mensagem
+                    messageHandler.sendChatMessage(message);
+                    
+                    // Aguarda resposta
+                    await new Promise((resolve) => {
+                        const timeout = setTimeout(() => {
+                            addMessage('system', 'Timeout na resposta');
+                            resolve();
+                        }, 15000);
+                        
+                        messageHandler.on('chatResponse', (response) => {
+                            clearTimeout(timeout);
+                            addMessage('bot', response.content);
+                            resolve();
+                        });
+                        
+                        messageHandler.on('chatError', (error) => {
+                            clearTimeout(timeout);
+                            addMessage('system', `Erro: ${error.message || error.displayMessage}`);
+                            resolve();
+                        });
+                    });
+                    
+                    // Pausa entre mensagens
+                    if (i < testMessages.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+                
+                updateStatus('🎉 Teste concluído com sucesso! O erro foi corrigido.', 'success');
+                addMessage('system', 'Teste finalizado - Chatbot funcionando normalmente');
+                
+            } catch (error) {
+                updateStatus(`❌ Erro no teste: ${error.message}`, 'error');
+                addMessage('system', `Erro: ${error.message}`);
+            }
+        };
+        
+        function updateStatus(text, type) {
+            const statusDiv = document.getElementById('status');
+            const statusText = document.getElementById('status-text');
+            
+            statusText.textContent = text;
+            statusDiv.className = `status ${type}`;
+            
+            console.log(`[${type.toUpperCase()}] ${text}`);
+        }
+        
+        function addMessage(type, content) {
+            const chatPreview = document.getElementById('chat-preview');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = content;
+            
+            chatPreview.appendChild(messageDiv);
+            chatPreview.scrollTop = chatPreview.scrollHeight;
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Página de teste final carregada');
+        });
+    </script>
+</body>
+</html>

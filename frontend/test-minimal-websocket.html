@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Servidor Mínimo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 5px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #218838; }
+        #log { background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Servidor WebSocket Mínimo</h1>
+    <p>Este teste usa um servidor WebSocket mínimo na porta 3002 para verificar se o problema está na configuração.</p>
+    
+    <div>
+        <button onclick="testMinimal()">Testar Servidor Mínimo (porta 3002)</button>
+        <button onclick="testOriginal()">Testar Servidor Original (porta 3001)</button>
+        <button onclick="clearLog()">Limpar Log</button>
+    </div>
+    
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+        
+        function testWebSocket(url, label) {
+            addLog(`🧪 Testando ${label}: ${url}`);
+            
+            const ws = new WebSocket(url);
+            
+            ws.onopen = function() {
+                addLog(`✅ ${label}: Conectado!`);
+                
+                // Envia mensagem de teste
+                const testMessage = {
+                    type: 'chat',
+                    messageId: `test_${Date.now()}`,
+                    content: `Teste do ${label}`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                addLog(`📤 ${label}: Enviando - ${JSON.stringify(testMessage)}`);
+                ws.send(JSON.stringify(testMessage));
+                
+                // Fecha após 3 segundos se não receber resposta
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        addLog(`⏰ ${label}: Timeout - fechando conexão`);
+                        ws.close();
+                    }
+                }, 3000);
+            };
+            
+            ws.onmessage = function(event) {
+                addLog(`📥 ${label}: Resposta recebida - ${event.data}`);
+            };
+            
+            ws.onclose = function(event) {
+                addLog(`🔌 ${label}: Conexão fechada - ${event.code}`);
+            };
+            
+            ws.onerror = function(error) {
+                addLog(`❌ ${label}: Erro - ${error}`);
+            };
+        }
+        
+        function testMinimal() {
+            testWebSocket('ws://localhost:3002/ws', 'Servidor Mínimo');
+        }
+        
+        function testOriginal() {
+            testWebSocket('ws://localhost:3001/ws', 'Servidor Original');
+        }
+        
+        function clearLog() {
+            log.textContent = '';
+            addLog('Log limpo');
+        }
+    </script>
+</body>
+</html>

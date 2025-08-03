@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs
+*.log
+
+# Test files
+src/__tests__
+coverage
+*.test.js
+
+# Development files
+.git
+.gitignore
+README.md
+.eslintrc.js
+.prettierrc
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Controles de Sessão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        
+        #console-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Teste dos Controles de Sessão</h1>
+        <p>Esta página testa se os botões de controle de sessão estão funcionando corretamente.</p>
+        
+        <div>
+            <button class="test-btn" onclick="testSessionEnd()">Testar Finalizar Sessão</button>
+            <button class="test-btn" onclick="testSessionReset()">Testar Nova Sessão</button>
+            <button class="test-btn" onclick="clearConsole()">Limpar Console</button>
+        </div>
+        
+        <h3>Console de Debug:</h3>
+        <div id="console-output"></div>
+    </div>
+    
+    <!-- Chatbot widget será injetado aqui -->
+    <div id="chatbot-container"></div>
+    
+    <script type="module">
+        import { ChatbotApp } from './src/components/ChatbotApp.js';
+        
+        // Redireciona console.log para nossa div
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToConsole(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = `[${timestamp}] ${type.toUpperCase()}: ${args.join(' ')}\n`;
+            consoleOutput.textContent += message;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addToConsole('log', ...args);
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addToConsole('error', ...args);
+        };
+        
+        console.warn = (...args) => {
+            originalWarn(...args);
+            addToConsole('warn', ...args);
+        };
+        
+        // Configuração do chatbot
+        const config = {
+            websocketUrl: 'ws://localhost:3001/ws',
+            title: 'Teste de Sessão',
+            position: 'bottom-right',
+            enableNotifications: false,
+            enableSounds: false,
+            autoStart: true,
+            enableLogging: true,
+            showWelcomeMessage: true
+        };
+        
+        // Inicializa chatbot
+        let chatbotApp = null;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Inicializando chatbot para teste...');
+            
+            try {
+                chatbotApp = new ChatbotApp(config);
+                
+                // Aguarda inicialização
+                await new Promise(resolve => {
+                    const checkInit = () => {
+                        if (chatbotApp.isInitialized) {
+                            resolve();
+                        } else {
+                            setTimeout(checkInit, 100);
+                        }
+                    };
+                    checkInit();
+                });
+                
+                console.log('Chatbot inicializado com sucesso para teste');
+                
+                // Torna disponível globalmente para testes
+                window.chatbotApp = chatbotApp;
+                
+            } catch (error) {
+                console.error('Erro ao inicializar chatbot:', error);
+            }
+        });
+        
+        // Funções de teste
+        window.testSessionEnd = function() {
+            console.log('=== TESTE: Finalizar Sessão ===');
+            if (chatbotApp && chatbotApp.chatWidget) {
+                chatbotApp.chatWidget.endSession();
+            } else {
+                console.error('Chatbot não está inicializado');
+            }
+        };
+        
+        window.testSessionReset = function() {
+            console.log('=== TESTE: Nova Sessão ===');
+            if (chatbotApp && chatbotApp.chatWidget) {
+                chatbotApp.chatWidget.startNewSession();
+            } else {
+                console.error('Chatbot não está inicializado');
+            }
+        };
+        
+        window.clearConsole = function() {
+            consoleOutput.textContent = '';
+        };
+        
+        // Log inicial
+        console.log('Página de teste carregada. Aguardando inicialização do chatbot...');
+    </script>
+</body>
+</html>

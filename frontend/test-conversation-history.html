@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Histórico de Conversas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-header {
+            background: #007bff;
+            color: white;
+            padding: 16px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .test-button.success {
+            background: #28a745;
+        }
+        
+        .test-button.danger {
+            background: #dc3545;
+        }
+        
+        .test-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            🧪 Teste do Sistema de Histórico de Conversas
+        </div>
+        
+        <div class="status info">
+            <strong>ℹ️ Objetivo:</strong> Testar se o ConversationHistoryManager mantém continuidade nas conversas
+        </div>
+        
+        <div class="test-section">
+            <h3>1. Teste Básico de Histórico</h3>
+            <button class="test-button" onclick="testBasicHistory()">Testar Histórico Básico</button>
+            <button class="test-button" onclick="clearOutput('basic-output')">Limpar</button>
+            <div id="basic-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. Teste de Persistência</h3>
+            <button class="test-button" onclick="testPersistence()">Testar Persistência</button>
+            <button class="test-button" onclick="testLoadSession()">Carregar Sessão</button>
+            <button class="test-button" onclick="clearOutput('persistence-output')">Limpar</button>
+            <div id="persistence-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Teste de Truncamento de Tokens</h3>
+            <button class="test-button" onclick="testTokenTruncation()">Testar Truncamento</button>
+            <button class="test-button" onclick="clearOutput('truncation-output')">Limpar</button>
+            <div id="truncation-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Teste de System Messages</h3>
+            <button class="test-button" onclick="testSystemMessages()">Testar System Messages</button>
+            <button class="test-button" onclick="clearOutput('system-output')">Limpar</button>
+            <div id="system-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. Teste de Integração com MessageHandler</h3>
+            <button class="test-button" onclick="testMessageHandlerIntegration()">Testar Integração</button>
+            <button class="test-button" onclick="clearOutput('integration-output')">Limpar</button>
+            <div id="integration-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>6. Informações da Sessão Atual</h3>
+            <button class="test-button success" onclick="showSessionInfo()">Mostrar Info da Sessão</button>
+            <button class="test-button danger" onclick="clearAllData()">Limpar Todos os Dados</button>
+            <div id="session-info" class="test-output"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ConversationHistoryManager } from './src/utils/ConversationHistoryManager.js';
+        import { MessageHandler } from './src/components/MessageHandler.js';
+        
+        // Instância global para testes
+        window.historyManager = new ConversationHistoryManager({
+            debug: true,
+            maxTokens: 1000 // Limite baixo para testar truncamento
+        });
+        
+        window.messageHandler = new MessageHandler('ws://localhost:3001/ws', {
+            enableLogging: true,
+            historyConfig: {
+                debug: true,
+                maxTokens: 1000
+            }
+        });
+        
+        // Funções de teste
+        window.testBasicHistory = function() {
+            const output = document.getElementById('basic-output');
+            output.innerHTML = '';
+            
+            try {
+                log(output, '🧪 Iniciando teste básico de histórico...');
+                
+                // Adiciona algumas mensagens
+                const msg1 = window.historyManager.addUserMessage('Olá, como você está?');
+                log(output, `✅ Mensagem do usuário adicionada: ${msg1.id}`);
+                
+                const msg2 = window.historyManager.addAssistantMessage('Olá! Estou bem, obrigado por perguntar. Como posso ajudá-lo hoje?');
+                log(output, `✅ Mensagem do assistente adicionada: ${msg2.id}`);
+                
+                const msg3 = window.historyManager.addUserMessage('Preciso de informações sobre seus serviços');
+                log(output, `✅ Segunda mensagem do usuário adicionada: ${msg3.id}`);
+                
+                // Prepara payload para API
+                const apiPayload = window.historyManager.prepareApiPayload();
+                log(output, `✅ Payload para API preparado com ${apiPayload.length} mensagens`);
+                log(output, '📋 Payload:', JSON.stringify(apiPayload, null, 2));
+                
+                // Verifica informações da sessão
+                const sessionInfo = window.historyManager.getSessionInfo();
+                log(output, `✅ Sessão: ${sessionInfo.sessionId}`);
+                log(output, `✅ Total de mensagens: ${sessionInfo.messageCount}`);
+                log(output, `✅ Total de tokens: ${sessionInfo.totalTokens}`);
+                
+                log(output, '🎉 Teste básico concluído com sucesso!');
+                
+            } catch (error) {
+                log(output, `❌ Erro no teste: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testPersistence = function() {
+            const output = document.getElementById('persistence-output');
+            output.innerHTML = '';
+            
+            try {
+                log(output, '🧪 Testando persistência...');
+                
+                // Cria nova sessão
+                const sessionId = window.historyManager.startNewSession({
+                    customerName: 'João Silva',
+                    stage: 'greeting'
+                });
+                log(output, `✅ Nova sessão criada: ${sessionId}`);
+                
+                // Adiciona mensagens
+                window.historyManager.addUserMessage('Esta é uma mensagem de teste para persistência');
+                window.historyManager.addAssistantMessage('Mensagem salva com sucesso no localStorage');
+                
+                log(output, '✅ Mensagens adicionadas e salvas automaticamente');
+                log(output, '💾 Dados salvos no localStorage');
+                log(output, '🔄 Recarregue a página e use "Carregar Sessão" para testar a recuperação');
+                
+            } catch (error) {
+                log(output, `❌ Erro no teste de persistência: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testLoadSession = function() {
+            const output = document.getElementById('persistence-output');
+            
+            try {
+                log(output, '🔄 Testando carregamento de sessão...');
+                
+                const sessionInfo = window.historyManager.getSessionInfo();
+                log(output, `✅ Sessão carregada: ${sessionInfo.sessionId}`);
+                log(output, `✅ Mensagens recuperadas: ${sessionInfo.messageCount}`);
+                log(output, `✅ Contexto: ${JSON.stringify(sessionInfo.context)}`);
+                
+                if (sessionInfo.messageCount > 0) {
+                    log(output, '🎉 Persistência funcionando corretamente!');
+                } else {
+                    log(output, '⚠️ Nenhuma mensagem encontrada. Execute "Testar Persistência" primeiro.');
+                }
+                
+            } catch (error) {
+                log(output, `❌ Erro ao carregar sessão: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testTokenTruncation = function() {
+            const output = document.getElementById('truncation-output');
+            output.innerHTML = '';
+            
+            try {
+                log(output, '🧪 Testando truncamento por limite de tokens...');
+                
+                // Cria nova sessão para teste
+                window.historyManager.startNewSession();
+                
+                // Adiciona mensagens longas para exceder limite
+                const longMessage1 = 'Esta é uma mensagem muito longa '.repeat(50);
+                const longMessage2 = 'Outra mensagem extremamente longa '.repeat(50);
+                const longMessage3 = 'Mais uma mensagem longa para testar '.repeat(50);
+                
+                window.historyManager.addUserMessage(longMessage1);
+                window.historyManager.addAssistantMessage(longMessage2);
+                window.historyManager.addUserMessage(longMessage3);
+                
+                const beforeTruncation = window.historyManager.calculateTotalTokens();
+                log(output, `📊 Tokens antes do truncamento: ${beforeTruncation}`);
+                
+                // Prepara payload (que deve truncar automaticamente)
+                const apiPayload = window.historyManager.prepareApiPayload();
+                
+                const afterTruncation = apiPayload.reduce((total, msg) => 
+                    total + window.historyManager.estimateTokens(msg.content), 0
+                );
+                
+                log(output, `📊 Tokens após truncamento: ${afterTruncation}`);
+                log(output, `📋 Mensagens no payload: ${apiPayload.length}`);
+                
+                if (afterTruncation < beforeTruncation) {
+                    log(output, '✅ Truncamento funcionando corretamente!');
+                } else {
+                    log(output, '⚠️ Truncamento pode não ter sido necessário');
+                }
+                
+            } catch (error) {
+                log(output, `❌ Erro no teste de truncamento: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testSystemMessages = function() {
+            const output = document.getElementById('system-output');
+            output.innerHTML = '';
+            
+            try {
+                log(output, '🧪 Testando system messages...');
+                
+                // Testa diferentes contextos
+                const contexts = [
+                    { customerName: 'Maria', stage: 'greeting' },
+                    { customerName: 'João', stage: 'information_gathering' },
+                    { stage: 'service_discussion' },
+                    { stage: 'closing' }
+                ];
+                
+                contexts.forEach((context, index) => {
+                    window.historyManager.startNewSession(context);
+                    const sessionInfo = window.historyManager.getSessionInfo();
+                    
+                    log(output, `📝 Contexto ${index + 1}: ${JSON.stringify(context)}`);
+                    log(output, `🤖 System message: ${sessionInfo.systemMessage}`);
+                    log(output, '---');
+                });
+                
+                log(output, '✅ System messages gerados com sucesso!');
+                
+            } catch (error) {
+                log(output, `❌ Erro no teste de system messages: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testMessageHandlerIntegration = function() {
+            const output = document.getElementById('integration-output');
+            output.innerHTML = '';
+            
+            try {
+                log(output, '🧪 Testando integração com MessageHandler...');
+                
+                // Verifica se MessageHandler tem histórico integrado
+                const stats = window.messageHandler.getStats();
+                log(output, `📊 Stats do MessageHandler:`);
+                log(output, `   - Sessão atual: ${stats.currentSessionId}`);
+                log(output, `   - Mensagens: ${stats.messageCount}`);
+                log(output, `   - Tokens: ${stats.totalTokens}`);
+                log(output, `   - Contexto: ${JSON.stringify(stats.sessionContext)}`);
+                
+                // Testa métodos de sessão
+                log(output, '🆕 Testando início de nova sessão...');
+                window.messageHandler.startSession({ customerName: 'Teste', stage: 'greeting' });
+                
+                log(output, '📝 Testando atualização de contexto...');
+                window.messageHandler.updateSessionContext({ stage: 'information_gathering' });
+                
+                // Verifica histórico
+                const history = window.messageHandler.getConversationHistory();
+                log(output, `📋 Histórico exportado:`);
+                log(output, JSON.stringify(history, null, 2));
+                
+                log(output, '✅ Integração funcionando corretamente!');
+                
+            } catch (error) {
+                log(output, `❌ Erro na integração: ${error.message}`, 'error');
+            }
+        };
+        
+        window.showSessionInfo = function() {
+            const output = document.getElementById('session-info');
+            output.innerHTML = '';
+            
+            try {
+                const sessionInfo = window.historyManager.getSessionInfo();
+                const exportedHistory = window.historyManager.exportHistory();
+                
+                log(output, '📊 Informações da Sessão Atual:');
+                log(output, JSON.stringify(sessionInfo, null, 2));
+                log(output, '');
+                log(output, '📋 Histórico Completo:');
+                log(output, JSON.stringify(exportedHistory, null, 2));
+                
+            } catch (error) {
+                log(output, `❌ Erro ao obter informações: ${error.message}`, 'error');
+            }
+        };
+        
+        window.clearAllData = function() {
+            if (confirm('Tem certeza que deseja limpar todos os dados do localStorage?')) {
+                try {
+                    // Limpa dados do localStorage
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('chatbot_history')) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                    
+                    // Reinicia gerenciador
+                    window.historyManager = new ConversationHistoryManager({
+                        debug: true,
+                        maxTokens: 1000
+                    });
+                    
+                    alert('✅ Todos os dados foram limpos!');
+                    
+                } catch (error) {
+                    alert(`❌ Erro ao limpar dados: ${error.message}`);
+                }
+            }
+        };
+        
+        window.clearOutput = function(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        };
+        
+        function log(element, message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '5px';
+            
+            if (type === 'error') {
+                logEntry.style.color = '#dc3545';
+            } else if (type === 'success') {
+                logEntry.style.color = '#28a745';
+            }
+            
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            element.appendChild(logEntry);
+            element.scrollTop = element.scrollHeight;
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Página de teste carregada');
+            console.log('📊 ConversationHistoryManager:', window.historyManager);
+            console.log('📊 MessageHandler:', window.messageHandler);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  backend:
+    env_file:
+      - ./backend/.env.development
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/logs:/app/logs
+    command: ["nodemon", "src/server.js"]
+    
+  nginx:
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html
+    ports:
+      - "3000:80"

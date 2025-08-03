@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Espaçamento Ajustado</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .preview-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .preview-header {
+            background: #007bff;
+            color: white;
+            padding: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .preview-content {
+            padding: 0;
+        }
+        
+        .info {
+            padding: 20px;
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        
+        .spacing-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        
+        .spacing-info h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .old-style {
+            background: #ffebee;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .new-style {
+            background: #e8f5e8;
+            border: 1px solid #c8e6c9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Espaçamento Harmônico Ajustado</h1>
+    
+    <div class="spacing-info">
+        <h3>📏 Ajustes de Espaçamento:</h3>
+        <ul>
+            <li><strong>Área de Input:</strong> <code>padding: 16px 16px 8px 16px</code> (reduzido padding-bottom)</li>
+            <li><strong>Botões de Sessão:</strong> <code>padding: 4px 16px 8px 16px</code> (reduzido padding-top)</li>
+            <li><strong>Resultado:</strong> Espaçamento mais próximo e harmônico</li>
+        </ul>
+    </div>
+    
+    <div class="preview-container">
+        <div class="preview-header">
+            Assistente Virtual
+        </div>
+        <div class="preview-content">
+            <!-- Simula algumas mensagens -->
+            <div style="padding: 16px; border-bottom: 1px solid #dee2e6;">
+                <div style="background: #007bff; color: white; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; max-width: 80%; margin-left: auto;">
+                    Olá! Como posso ajudá-la hoje?
+                </div>
+                <div style="background: #f8f9fa; color: #343a40; padding: 8px 12px; border-radius: 8px; max-width: 80%;">
+                    Preciso de informações sobre seus serviços
+                </div>
+            </div>
+            
+            <!-- Área de input com padding ajustado -->
+            <div class="chat-widget__input-area">
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <div style="flex: 1; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 12px; background: white;">
+                        Digite sua mensagem...
+                    </div>
+                    <button style="width: 40px; height: 40px; background: #007bff; color: white; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #6c757d; margin-top: 4px;">
+                    0/4000
+                </div>
+            </div>
+            
+            <!-- Botões de sessão com espaçamento ajustado -->
+            <div class="chat-widget__session-controls">
+                <button class="chat-widget__session-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16 17v2H2v-2s0-4 7-4 7 4 7 4m-3.5-9.5A3.5 3.5 0 1 0 9 11a3.5 3.5 0 0 0 3.5-3.5z"/>
+                    </svg>
+                    Finalizar
+                </button>
+                <button class="chat-widget__session-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Novo
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="comparison">
+        <div class="comparison-item old-style">
+            <strong>❌ Antes</strong><br>
+            Espaçamento excessivo<br>
+            Botões muito distantes<br>
+            Visual desconectado
+        </div>
+        <div class="comparison-item new-style">
+            <strong>✅ Agora</strong><br>
+            Espaçamento harmônico<br>
+            Proximidade visual<br>
+            Layout coeso
+        </div>
+    </div>
+    
+    <div class="info">
+        <strong>🎨 Características do Novo Espaçamento:</strong>
+        <ul>
+            <li><strong>Input Area:</strong> Padding inferior reduzido (16px → 8px)</li>
+            <li><strong>Session Controls:</strong> Padding superior reduzido (8px → 4px)</li>
+            <li><strong>Visual:</strong> Elementos mais próximos e conectados</li>
+            <li><strong>UX:</strong> Fluxo mais natural entre input e ações</li>
+            <li><strong>Responsivo:</strong> Mantém proporções em mobile</li>
+        </ul>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 8px;">
+        <strong>📱 Para testar o resultado final:</strong><br>
+        Abra <code>frontend/index.html</code> para ver o espaçamento ajustado no chatbot!
+    </div>
+    
+    <script>
+        // Adiciona interatividade para demonstração
+        document.querySelectorAll('.chat-widget__session-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.textContent.trim();
+                alert(`Botão "${action}" clicado!\\n\\n✅ Espaçamento harmônico aplicado!\\n✅ Distância ideal do input!`);
+            });
+        });
+    </script>
+</body>
+</html>

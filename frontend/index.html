@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Chatbot Widget Demo</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Chatbot web integrado com ChatGPT via protocolo MCP">
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ChatbotWeb">
+    <meta name="msapplication-TileColor" content="#007bff">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="src/index.js" as="script">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        #app {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .demo-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .demo-section h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        
+        .demo-buttons {
+            margin: 20px 0;
+        }
+        
+        .demo-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .demo-btn:hover {
+            background: #0056b3;
+        }
+        
+        .demo-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        .status-connecting { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>🤖 Demo do Chatbot Widget</h1>
+        <p>Este é um site de demonstração para testar o widget do chatbot com integração MCP.</p>
+        <p>O ícone do chatbot deve aparecer no canto inferior direito da página.</p>
+        
+        <div class="demo-section">
+            <h3>📱 Funcionalidades</h3>
+            <ul>
+                <li>Interface responsiva para desktop e mobile</li>
+                <li>Conexão WebSocket com auto-reconexão</li>
+                <li>Integração com ChatGPT via protocolo MCP</li>
+                <li>Indicadores de status e digitação</li>
+                <li>Histórico de mensagens persistente</li>
+                <li>Suporte a temas claro e escuro</li>
+            </ul>
+        </div>
+        
+        <div class="demo-section">
+            <h3>🎮 Controles de Demonstração</h3>
+            <div class="demo-buttons">
+                <button class="demo-btn" onclick="toggleChatbot()">Abrir/Fechar Chat</button>
+                <button class="demo-btn" onclick="sendTestMessage()">Enviar Mensagem Teste</button>
+                <button class="demo-btn" onclick="clearChatHistory()">Limpar Histórico</button>
+                <button class="demo-btn" onclick="forceReconnect()">Forçar Reconexão</button>
+                <button class="demo-btn" onclick="showStats()">Mostrar Estatísticas</button>
+            </div>
+            
+            <div id="connection-status">
+                <span class="status-indicator status-offline"></span>
+                <span>Status: Desconectado</span>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>💬 Mensagens de Exemplo</h3>
+            <p>Experimente enviar estas mensagens para testar o chatbot:</p>
+            <ul>
+                <li>"Olá, como você está?"</li>
+                <li>"Qual é o seu nome?"</li>
+                <li>"Me conte uma piada"</li>
+                <li>"Como posso criar uma conta?"</li>
+                <li>"Preciso de ajuda com meu pedido"</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Chatbot widget será injetado aqui -->
+    <div id="chatbot-container"></div>
+    
+    <script type="module" src="src/index.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // Handle offline/online status
+        function updateOnlineStatus() {
+            const body = document.body;
+            if (navigator.onLine) {
+                body.classList.remove('offline');
+            } else {
+                body.classList.add('offline');
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
+    
+    <script>
+        // Funções de demonstração
+        let chatbotInstance = null;
+        
+        // Aguarda o chatbot ser inicializado
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                chatbotInstance = window.chatbotApp;
+                if (chatbotInstance) {
+                    updateConnectionStatus();
+                    
+                    // Monitora mudanças de status
+                    if (chatbotInstance.messageHandler) {
+                        chatbotInstance.messageHandler.on('connected', updateConnectionStatus);
+                        chatbotInstance.messageHandler.on('disconnected', updateConnectionStatus);
+                        chatbotInstance.messageHandler.on('reconnectScheduled', updateConnectionStatus);
+                    }
+                }
+            }, 1000);
+        });
+        
+        function toggleChatbot() {
+            if (chatbotInstance && chatbotInstance.chatWidget) {
+                chatbotInstance.chatWidget.toggle();
+            }
+        }
+        
+        function sendTestMessage() {
+            if (chatbotInstance && chatbotInstance.chatWidget) {
+                chatbotInstance.chatWidget.open();
+                setTimeout(() => {
+                    const testMessages = [
+                        "Esta é uma mensagem de teste!",
+                        "Como você está funcionando?",
+                        "Teste de conectividade",
+                        "Olá, chatbot!"
+                    ];
+                    const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+                    chatbotInstance.handleUserMessage(randomMessage);
+                }, 500);
+            }
+        }
+        
+        function clearChatHistory() {
+            if (chatbotInstance) {
+                chatbotInstance.clearHistory();
+                alert('Histórico de mensagens limpo!');
+            }
+        }
+        
+        function forceReconnect() {
+            if (chatbotInstance) {
+                chatbotInstance.reconnect();
+                alert('Reconexão forçada!');
+            }
+        }
+        
+        function showStats() {
+            if (chatbotInstance) {
+                const stats = chatbotInstance.getStats();
+                alert('Estatísticas do Chatbot:\n\n' + JSON.stringify(stats, null, 2));
+            }
+        }
+        
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
+            const indicator = statusElement.querySelector('.status-indicator');
+            const text = statusElement.querySelector('span:last-child');
+            
+            if (chatbotInstance && chatbotInstance.messageHandler) {
+                const stats = chatbotInstance.messageHandler.getStats();
+                
+                if (stats.isConnected) {
+                    indicator.className = 'status-indicator status-online';
+                    text.textContent = 'Status: Conectado';
+                } else if (stats.isConnecting) {
+                    indicator.className = 'status-indicator status-connecting';
+                    text.textContent = 'Status: Conectando...';
+                } else {
+                    indicator.className = 'status-indicator status-offline';
+                    text.textContent = 'Status: Desconectado';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
