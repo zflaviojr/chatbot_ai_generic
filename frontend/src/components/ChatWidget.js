@@ -16,7 +16,7 @@ export class ChatWidget {
       position: config.position || 'bottom-right',
       theme: config.theme || 'light',
       showWelcomeMessage: config.showWelcomeMessage !== false,
-      welcomeMessage: config.welcomeMessage || 'Olá! Como posso ajudar você hoje?',
+      welcomeMessage: config.welcomeMessage || 'Olá! Como posso te ajudar hoje?',
       placeholder: config.placeholder || 'Digite sua mensagem...',
       title: config.title || 'Assistente Virtual',
       enableTouchGestures: config.enableTouchGestures !== false,

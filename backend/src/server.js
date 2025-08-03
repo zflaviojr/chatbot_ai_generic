@@ -288,72 +288,50 @@ wss.on('connection', (ws, request) => {
               lastMessage: conversationHistory[conversationHistory.length - 1]?.role
             });
 
-            // Separa system message do histórico
-            const systemMessage = conversationHistory.find(msg => msg.role === 'system');
+            // Remove qualquer system message do histórico do frontend (não deve vir do frontend)
             const messageHistory = conversationHistory.filter(msg => msg.role !== 'system');
-
+            
             // Garante que messageHistory é sempre um array válido
             const safeMessageHistory = Array.isArray(messageHistory) ? messageHistory : [];
             
-            // debug zFlavio - remover depois!
-            if (!message.content) {
-              console.log("❌ Mensagem sem conteúdo:", message);
-
-              console.log('Mensagem recebida:', message);
-              console.log('Conteúdo da mensagem:', message.content);
-
-              //return;  // Ou trate de outra forma a falta de conteúdo
-            }
-
-            //Correção
-            /*
-            console.log('📤 Enviando para AI Provider:', {
-              messageContent: message.content,
-              historyLength: safeMessageHistory.length,
-              systemPrompt: systemMessage?.content ? 'presente' : 'usando padrão'
-            });
-
-            const aiResponse = await aiManager.sendMessage(message.content, {
-              sessionId: session.id,
-              requestId: message.messageId,
-              history: safeMessageHistory, // Histórico sem system message (sempre array)
-              systemPrompt: systemMessage?.content || 'Você é um assistente virtual útil e amigável.'
-            });
-            */
-
+            // Usa SEMPRE o AI_SYSTEM_PROMPT do .env, não do frontend
+            const systemPrompt = process.env.AI_SYSTEM_PROMPT || 'Você é um assistente virtual útil e amigável.';
             
-            const lastUserMessage = message.history.filter(msg => msg.role === 'user').pop();
-            let content = '';
-            if (lastUserMessage) {
-              content = lastUserMessage.content;
-              console.log('Conteúdo da última mensagem do usuário:', content);
-            } else {
-              console.log('❌ Nenhuma mensagem de usuário encontrada.');
-              //return;  // Ou trate a ausência de mensagens
+            // Obtém conteúdo da mensagem atual
+            let content = message.content;
+            
+            // Se não há conteúdo direto, tenta obter da última mensagem do usuário no histórico
+            if (!content && message.history && Array.isArray(message.history)) {
+              const lastUserMessage = message.history.filter(msg => msg.role === 'user').pop();
+              if (lastUserMessage) {
+                content = lastUserMessage.content;
+              }
+            }
+            
+            // Verifica se há conteúdo para processar
+            if (!content) {
+              console.log('❌ Mensagem sem conteúdo válido:', message);
               ws.send(JSON.stringify({
                 type: 'chat_error',
                 messageId: message.messageId,
-                message: 'Desculpe, ocorreu um erro ao processar o conteúdo da sua mensagem. Tente novamente.',
-                error: error.message,
+                message: 'Desculpe, não foi possível processar sua mensagem. Tente novamente.',
+                error: 'Conteúdo da mensagem não encontrado',
                 timestamp: new Date().toISOString()
               }));
+              return;
             }
-
-            console.log('Content:', content);
 
             console.log('📤 Enviando para AI Provider:', {
               messageContent: content,
               historyLength: safeMessageHistory.length,
-              systemPrompt: systemMessage?.content ? 'presente' : 'usando padrão'
+              systemPrompt: 'usando AI_SYSTEM_PROMPT do .env'
             });
 
-
-            // Agora você pode usar 'content' no lugar de 'message.content'
             const aiResponse = await aiManager.sendMessage(content, {
               sessionId: session.id,
               requestId: message.messageId,
               history: safeMessageHistory, // Histórico sem system message (sempre array)
-              systemPrompt: systemMessage?.content || 'Você é um assistente virtual útil e amigável.'
+              systemPrompt: systemPrompt // Sempre do .env
             });
             
             // Adiciona resposta da IA ao histórico

@@ -381,8 +381,9 @@ export class MessageHandler {
       timestamp: Date.now()
     });
     
-    // Envia apenas o histórico formatado, não a mensagem individual
+    // Envia mensagem com histórico formatado
     return this.sendMessage('chat', {
+      content: content, // Inclui o conteúdo da mensagem
       sessionId: this.historyManager.sessionId,
       history: historyPayload // Inclui histórico completo já formatado
     });

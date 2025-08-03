@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste System Prompt Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Teste System Prompt Fix</h1>
+        <p>Este teste verifica se o system prompt está sendo usado corretamente do backend (.env) ao invés do frontend.</p>
+        
+        <div class="test-section info">
+            <h3>📋 Status da Conexão</h3>
+            <div id="connectionStatus">Desconectado</div>
+            <button onclick="testConnection()">Testar Conexão</button>
+        </div>
+
+        <div class="test-section">
+            <h3>💬 Teste de Mensagem</h3>
+            <input type="text" id="messageInput" placeholder="Digite uma mensagem de teste..." value="Olá, me fale sobre os serviços da clínica">
+            <button onclick="sendTestMessage()">Enviar Mensagem</button>
+            <div id="messageResponse"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Verificação do System Prompt</h3>
+            <p>Esperado: O bot deve responder como atendente de clínica de estética (conforme AI_SYSTEM_PROMPT do .env)</p>
+            <div id="systemPromptTest"></div>
+            <button onclick="testSystemPrompt()">Testar System Prompt</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Logs de Debug</h3>
+            <button onclick="clearLogs()">Limpar Logs</button>
+            <div id="debugLogs" class="log"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { MessageHandler } from './frontend/src/components/MessageHandler.js';
+
+        let messageHandler = null;
+        let isConnected = false;
+
+        // Configuração do WebSocket
+        const WS_URL = 'ws://localhost:3001/ws';
+
+        // Função para log
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('debugLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666">[${timestamp}]</span> ${message}`;
+            if (type === 'error') logEntry.style.color = 'red';
+            if (type === 'success') logEntry.style.color = 'green';
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        // Inicializa MessageHandler
+        function initMessageHandler() {
+            if (messageHandler) {
+                messageHandler.destroy();
+            }
+
+            addLog('🔧 Inicializando MessageHandler...');
+            
+            messageHandler = new MessageHandler(WS_URL, {
+                enableLogging: true,
+                reconnectInterval: 2000,
+                maxReconnectAttempts: 3,
+                historyConfig: {
+                    debug: true
+                }
+            });
+
+            // Event listeners
+            messageHandler.on('connected', (data) => {
+                isConnected = true;
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span style="color: green">✅ Conectado</span>';
+                addLog('✅ Conectado ao WebSocket', 'success');
+            });
+
+            messageHandler.on('disconnected', (data) => {
+                isConnected = false;
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span style="color: red">❌ Desconectado</span>';
+                addLog('❌ Desconectado do WebSocket', 'error');
+            });
+
+            messageHandler.on('chatResponse', (data) => {
+                addLog('📨 Resposta recebida do bot', 'success');
+                
+                const responseDiv = document.getElementById('messageResponse');
+                responseDiv.innerHTML = `
+                    <div style="background: #e8f5e8; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                        <strong>🤖 Bot:</strong> ${data.content}
+                        <br><small>Modelo: ${data.model || 'N/A'} | Tokens: ${data.usage?.totalTokens || 'N/A'}</small>
+                    </div>
+                `;
+
+                // Verifica se a resposta parece ser de um atendente de clínica
+                const isClinicResponse = checkIfClinicResponse(data.content);
+                const testDiv = document.getElementById('systemPromptTest');
+                
+                if (isClinicResponse) {
+                    testDiv.innerHTML = `
+                        <div class="success">
+                            ✅ <strong>System Prompt funcionando!</strong><br>
+                            A resposta indica que o bot está agindo como atendente de clínica de estética.
+                        </div>
+                    `;
+                } else {
+                    testDiv.innerHTML = `
+                        <div class="error">
+                            ❌ <strong>Possível problema com System Prompt</strong><br>
+                            A resposta não parece ser de um atendente de clínica. Verifique se AI_SYSTEM_PROMPT está sendo usado.
+                        </div>
+                    `;
+                }
+            });
+
+            messageHandler.on('chatError', (data) => {
+                addLog(`❌ Erro no chat: ${data.message}`, 'error');
+                
+                const responseDiv = document.getElementById('messageResponse');
+                responseDiv.innerHTML = `
+                    <div style="background: #f8d7da; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                        <strong>❌ Erro:</strong> ${data.message}
+                    </div>
+                `;
+            });
+
+            messageHandler.on('connectionError', (error) => {
+                addLog(`❌ Erro de conexão: ${error.message}`, 'error');
+            });
+        }
+
+        // Função para verificar se a resposta é de clínica
+        function checkIfClinicResponse(content) {
+            const clinicKeywords = [
+                'clínica', 'estética', 'botox', 'criolipólise', 'emagrecimento',
+                'estrias', 'vazinhos', 'limpeza de pele', 'avaliação', 'pacote',
+                'atendimento', 'serviços', 'tratamento', 'procedimento'
+            ];
+            
+            const contentLower = content.toLowerCase();
+            return clinicKeywords.some(keyword => contentLower.includes(keyword));
+        }
+
+        // Funções globais para os botões
+        window.testConnection = function() {
+            addLog('🔄 Testando conexão...');
+            initMessageHandler();
+        };
+
+        window.sendTestMessage = function() {
+            if (!isConnected) {
+                addLog('❌ Não conectado. Teste a conexão primeiro.', 'error');
+                return;
+            }
+
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) {
+                addLog('❌ Digite uma mensagem primeiro.', 'error');
+                return;
+            }
+
+            addLog(`📤 Enviando mensagem: "${message}"`);
+            messageHandler.sendChatMessage(message);
+        };
+
+        window.testSystemPrompt = function() {
+            if (!isConnected) {
+                addLog('❌ Não conectado. Teste a conexão primeiro.', 'error');
+                return;
+            }
+
+            const testMessage = "Olá, quais serviços vocês oferecem?";
+            addLog(`🧪 Testando system prompt com: "${testMessage}"`);
+            messageHandler.sendChatMessage(testMessage);
+        };
+
+        window.clearLogs = function() {
+            document.getElementById('debugLogs').innerHTML = '';
+        };
+
+        // Inicializa automaticamente
+        addLog('🚀 Página carregada. Clique em "Testar Conexão" para começar.');
+    </script>
+</body>
+</html>

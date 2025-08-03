@@ -134,15 +134,10 @@ export class ConversationHistoryManager {
   formatMessagesForApi(messages, provider = 'openai') {
     const formatted = [];
     
-    // Sempre inclui system message primeiro
-    if (this.systemMessage) {
-      formatted.push({
-        role: 'system',
-        content: this.systemMessage
-      });
-    }
+    // NÃO inclui system message - será gerenciado pelo backend
+    // System message vem do AI_SYSTEM_PROMPT do .env no backend
     
-    // Adiciona mensagens do histórico com roles corretas
+    // Adiciona apenas mensagens do histórico (user/assistant)
     messages.forEach(msg => {
       if (msg.role !== 'system') {
         // Corrige role "assistant" se estiver como "assistent"
@@ -155,7 +150,7 @@ export class ConversationHistoryManager {
       }
     });
     
-    this.log(`Mensagens formatadas para API: ${formatted.length} mensagens`);
+    this.log(`Mensagens formatadas para API: ${formatted.length} mensagens (sem system message)`);
     this.log('Payload formatado:', JSON.stringify(formatted, null, 2));
     
     return formatted;
@@ -180,8 +175,8 @@ export class ConversationHistoryManager {
    * Trunca histórico usando estratégia de janela deslizante
    */
   truncateHistory(maxTokens) {
-    const systemTokens = this.estimateTokens(this.systemMessage || '');
-    let availableTokens = maxTokens - systemTokens;
+    // System message agora é gerenciado pelo backend, usa todos os tokens disponíveis
+    let availableTokens = maxTokens;
     
     // Mantém mensagens mais recentes
     const truncated = [];
@@ -203,9 +198,9 @@ export class ConversationHistoryManager {
    * Calcula total de tokens no histórico
    */
   calculateTotalTokens() {
-    const systemTokens = this.estimateTokens(this.systemMessage || '');
+    // System message agora é gerenciado pelo backend, não conta nos tokens do frontend
     const messageTokens = this.messages.reduce((total, msg) => total + msg.tokenCount, 0);
-    return systemTokens + messageTokens;
+    return messageTokens;
   }
 
   /**
@@ -218,31 +213,13 @@ export class ConversationHistoryManager {
   }
 
   /**
-   * Gera system message baseado no contexto
+   * Gera system message baseado no contexto (REMOVIDO - agora usa AI_SYSTEM_PROMPT do backend)
    */
   generateSystemMessage() {
-    const context = this.sessionContext;
-    
-    let systemMessage = 'Você é um assistente virtual educado e prestativo.';
-    
-    if (context.customerName) {
-      systemMessage += ` O cliente se chama ${context.customerName}.`;
-    }
-    
-    if (context.stage) {
-      const stageMessages = {
-        greeting: ' Você está iniciando o atendimento, seja acolhedor.',
-        information_gathering: ' Você está coletando informações do cliente, faça perguntas relevantes.',
-        service_discussion: ' Você está discutindo serviços, seja detalhado e esclarecedor.',
-        closing: ' Você está finalizando o atendimento, seja cordial e ofereça ajuda futura.'
-      };
-      systemMessage += stageMessages[context.stage] || '';
-    }
-    
-    systemMessage += ' Mantenha respostas concisas e relevantes ao contexto da conversa.';
-    
-    this.systemMessage = systemMessage;
-    this.log(`System message gerado: ${systemMessage}`);
+    // System message agora é gerenciado pelo backend usando AI_SYSTEM_PROMPT
+    // Não geramos mais system message no frontend
+    this.systemMessage = null;
+    this.log('System message será gerenciado pelo backend via AI_SYSTEM_PROMPT');
   }
 
   /**
