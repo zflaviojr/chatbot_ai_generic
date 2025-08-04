@@ -1,6 +1,6 @@
 # Chatbot Web MCP
 
-Um chatbot web que se conecta com ChatGPT e a outros modelos (via OpenRouter) através do protocolo MCP (Model Context Protocol).
+A web-based chatbot that connects directly with ChatGPT or other models (via OpenRouter – LLaMA, Grok, etc.), with customer service expertise defined in the backend and full conversational context taken into account during interactions.
 
 ## Estrutura do Projeto
 
@@ -53,4 +53,5 @@ npm run dev
 - `npm start` - Iniciar servidor
 - `npm test` - Executar testes
 - `npm run lint` - Verificar código
+
 - `npm run format` - Formatar código
